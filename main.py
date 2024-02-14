@@ -49,18 +49,42 @@ for i in range(len(df_internet)):
     df_internet.iloc[i, columna_part_accesos] = round(df_internet.iloc[i]["ACCESOS"] /
                                                           df_internet.iloc[i]["ACCESOS_PERIODO"], 4)
 
-tabla_participacion = pd.pivot_table(df_internet, values=["PARTICIPACION_TRAFICO", "PARTICIPACION_ACCESOS"], index=["PERIODO", "EMPRESA"], aggfunc="sum")
-tabla_participacion.reset_index(inplace=True)
-print(tabla_participacion)
+participacion_trafico = pd.pivot_table(df_internet,
+                                       values=["PARTICIPACION_TRAFICO"],
+                                       index=["EMPRESA"],
+                                       columns="PERIODO",
+                                       aggfunc="sum",
+                                       margins=True,  # presentar valores acumulados totales
+                                       margins_name="Total")
+participacion_trafico.reset_index(inplace=True)
+
+participacion_accesos = pd.pivot_table(df_internet,
+                                       values=["PARTICIPACION_ACCESOS"],
+                                       index=["EMPRESA"],
+                                       columns="PERIODO",
+                                       aggfunc="sum",
+                                       margins=True,  # presentar valores acumulados totales
+                                       margins_name="Total",
+                                       sort=True)
+participacion_accesos.reset_index(inplace=True)
 
 
-print(df_internet.dtypes)
-# ii. calcular trafico promedio mensual por acceso
+print(participacion_accesos)
 
-tabla3 = pd.pivot_table(df_internet, values=["TRAFICO", "ACCESOS"], index=["ANNO", "TRIMESTRE"], aggfunc="sum")
-tabla3.reset_index(inplace=True)
-tabla3 = tabla3.loc[tabla3["ANNO"] > 2019]
-tabla3["TRAFICO_POR_ACCESO"] = tabla3.loc[:, "TRAFICO"] / (3 * tabla3.loc[:, "ACCESOS"])
-tabla3["TRAFICO_POR_ACCESO"] = round(tabla3["TRAFICO_POR_ACCESO"] / 1024, 2)
-print(tabla3)
-tabla_participacion.to_excel("tabla_participacion.xlsx", index=False)
+# ii. Calcular trafico promedio mensual por acceso
+df_internet = df_internet.loc[df_internet["ANNO"] > 2019]
+trafico_promedio = pd.pivot_table(df_internet,
+                                  values=["TRAFICO", "ACCESOS"],
+                                  index=["ANNO", "TRIMESTRE"],
+                                  aggfunc="sum")
+trafico_promedio.reset_index(inplace=True)
+
+trafico_promedio["TRAFICO_POR_ACCESO"] = (trafico_promedio.loc[:, "TRAFICO"] / (3 * trafico_promedio.loc[:, "ACCESOS"]))
+
+trafico_promedio["TRAFICO_POR_ACCESO"] = round(trafico_promedio["TRAFICO_POR_ACCESO"] / 1024, 2)
+print(trafico_promedio)
+
+with pd.ExcelWriter('resul Mauricio Olaya.xlsx') as writer:
+    participacion_accesos.to_excel(writer, sheet_name="i. Participacion accesos")
+    participacion_trafico.to_excel(writer, sheet_name="i. Participacion trafico")
+    trafico_promedio.to_excel(writer, sheet_name="ii. Trafico promedio")
